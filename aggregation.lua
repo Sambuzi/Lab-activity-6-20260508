@@ -1,132 +1,98 @@
---aggregation.lua
+--AGGREGATION BEHAVIOR
+local W = 0.1
+local S = 0.01
+local PS_MAX = 0.99
+local PW_MIN = 0.005
+local ALPHA = 0.1
+local BETA = 0.05
 
---parametri presi da l'arena che ci ha dato il prof
+local MAXRANGE = 30
+local MAX_VELOCITY = 15
 
-S = 0.01
-W = 0.10
-ALPHA = 0.10
-BETA = 0.05
-PSmax = 0.99
-PWmin = 0.005
-MAXRANGE = 30 
+local PROX_THRESHOLD = 0.1
 
---parametri per la simulazione
-
-SPEED = 10
-TURN_SPEED = 5
-OBS_THRESHOLD = 0.10
-
---STATO DEL ROBOT
-
-WALKING = 1
-STOPPED = 0
-CURRENT_STATE = WALKING
-TURN_DIRECTION = 1
-TURN_STEPS= 0
+-- Robot states
+local STATE_MOVE = "MOVING"
+local STATE_STOPPED = "STOPPED"
 
 function init()
-    CURRENT_STATE = WALKING
-    TURN_STEPS = 0
+    robot.state = STATE_MOVE
     robot.range_and_bearing.set_data(1, 0)
     robot.leds.set_all_colors("green")
+end
+
+function CountRAB()
+    local number_robot_sensed = 0
+    for i = 1, #robot.range_and_bearing do
+        if robot.range_and_bearing[i].range < MAXRANGE 
+            and robot.range_and_bearing[i].data[1]==1 then
+            number_robot_sensed = number_robot_sensed + 1
+        end
+    end
+    return number_robot_sensed
+end
+
+function Bernoulli(p)
+    return robot.random.uniform() <= p
+end
+
+function step()
+    local N = CountRAB()
+
+    if robot.state == STATE_MOVE then
+        local Ps = math.min(PS_MAX, S + ALPHA * N)
+        
+        if Bernoulli(Ps) then
+            -- Stop the robot
+            robot.state = STATE_STOPPED
+            robot.range_and_bearing.set_data(1, 1)
+            robot.leds.set_all_colors("red")
+        else
+            -- Continue to move randomly
+            MoveRandomly()
+        end
+
+    elseif robot.state == STATE_STOPPED then
+        local Pw = math.max(PW_MIN, W - BETA * N)
+        
+        if Bernoulli(Pw) then
+            -- Start to move
+            robot.state = STATE_MOVE
+            robot.range_and_bearing.set_data(1, 0)
+            robot.leds.set_all_colors("green")
+        else
+            -- Stay still
+            robot.wheels.set_velocity(0, 0)
+        end
+    end
+end
+
+function MoveRandomly()
+    local sum_left_sensors = 0
+    local sum_right_sensors = 0
+
+    for i=1, 24 do
+        if (i >= 1) and (i <= 6) then
+            sum_left_sensors = sum_left_sensors + robot.proximity[i].value
+        else
+            sum_right_sensors = sum_right_sensors + robot.proximity[i].value
+        end
+    end
+
+    if sum_left_sensors > PROX_THRESHOLD or sum_right_sensors > PROX_THRESHOLD then
+        local speed_diff = (sum_left_sensors - sum_right_sensors) * 5
+        local v_left = MAX_VELOCITY + speed_diff
+        local v_right = MAX_VELOCITY - speed_diff
+        robot.wheels.set_velocity(v_left, v_right)
+    else
+        robot.wheels.set_velocity(MAX_VELOCITY, MAX_VELOCITY)
+    end
 end
 
 function reset()
     init()
 end
 
-function step()
-    local N = CountStoppedRobots()
-
-    if CURRENT_STATE == WALKING then
-        robot.range_and_bearing.set_data(1, 0)
-        robot.leds.set_all_colors("green")
-
-        local Ps = math.min(PSmax, S + ALPHA *N)
-        if bernoulli(Ps) then
-            CURRENT_STATE = STOPPED
-            Stop()
-        else
-            RandomWalk()
-        end
-    elseif CURRENT_STATE == STOPPED then
-        robot.range_and_bearing.set_data(1, 1)
-        robot.leds.set_all_colors("red")
-
-        local Pw = math.max(PWmin, W - BETA *N)
-        if bernoulli(Pw) then
-            CURRENT_STATE = WALKING
-            RandomWalk()
-        else
-            Stop()
-        end
-    end
-end
-
 function destroy()
-end
-
-function bernoulli(p)
-    local t = robot.random.uniform()
-    return t <= p
-end
-
-function CountStoppedRobots()
-    local num_robots = 0
-    for i =1, #robot.range_and_bearing do
-        if robot.range_and_bearing[i].range < MAXRANGE then
-            if robot.range_and_bearing[i].data[1] == 1 then
-                num_robots = num_robots + 1
-            end
-        end
-    end
-    return num_robots
-end
-
-function Stop()
-    robot.wheels.set_velocity(0, 0)
-end
-
-function RandomWalk()
-    local max_value = 0
-    local max_angle = 0
-
-    for i = 1, #robot.proximity do
-        if robot.proximity[i].value > max_value then
-            max_value = robot.proximity[i].value
-            max_angle = robot.proximity[i].angle
-        end
-    end
-    if max_value > OBS_THRESHOLD then
-      -- Obstacle on left side -> turn right; obstacle on right side -> turn left
-      if max_angle > 0 then
-         robot.wheels.set_velocity(TURN_SPEED, -TURN_SPEED)
-      else
-         robot.wheels.set_velocity(-TURN_SPEED, TURN_SPEED)
-      end
-      TURN_STEPS = 0
-      return
-   end
-
-   -- Random walk: sometimes choose a short turn, otherwise go straight
-   if TURN_STEPS > 0 then
-      robot.wheels.set_velocity(-TURN_DIRECTION * TURN_SPEED,
-                                TURN_DIRECTION * TURN_SPEED)
-      TURN_STEPS = TURN_STEPS - 1
-   else
-      if robot.random.uniform() < 0.05 then
-         TURN_STEPS = robot.random.uniform(5, 20)
-         if robot.random.uniform() < 0.5 then
-            TURN_DIRECTION = -1
-         else
-            TURN_DIRECTION = 1
-         end
-      else
-         robot.wheels.set_velocity(SPEED, SPEED)
-      end
-   end
 
 end
-
-
-
