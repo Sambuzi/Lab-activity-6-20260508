@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "emmylua",
+      "request": "launch",
+      "name": "Launch current Lua file (EmmyLua)",
+      "program": "${file}"
+    }
+  ]
+}

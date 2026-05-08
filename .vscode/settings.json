@@ -1,0 +1,18 @@
+{
+  "files.associations": {
+    "*.lua": "lua"
+  },
+  "Lua.runtime.version": "Lua 5.3",
+  "Lua.diagnostics.globals": [
+    "arg",
+    "robot",
+    "destroy",
+    "bernoulli",
+    "init",
+    "reset",
+    "step"
+],
+  "Lua.telemetry.enable": false,
+  "Lua.workspace.checkThirdParty": false,
+  "editor.formatOnSave": false
+}
