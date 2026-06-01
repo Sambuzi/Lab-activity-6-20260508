@@ -10,6 +10,7 @@ local MAXRANGE = 30
 local MAX_VELOCITY = 15
 
 local PROX_THRESHOLD = 0.1
+local RANDOM_TURN_PROBABILITY = 0.05
 
 -- Robot states
 local STATE_MOVE = "MOVING"
@@ -36,6 +37,10 @@ function Bernoulli(p)
     return robot.random.uniform() <= p
 end
 
+function ClampVelocity(v)
+    return math.max(-MAX_VELOCITY, math.min(MAX_VELOCITY, v))
+end
+
 function step()
     local N = CountRAB()
 
@@ -47,6 +52,7 @@ function step()
             robot.state = STATE_STOPPED
             robot.range_and_bearing.set_data(1, 1)
             robot.leds.set_all_colors("red")
+            robot.wheels.set_velocity(0, 0)
         else
             -- Continue to move randomly
             MoveRandomly()
@@ -71,19 +77,20 @@ function MoveRandomly()
     local sum_left_sensors = 0
     local sum_right_sensors = 0
 
-    for i=1, 24 do
-        if (i >= 1) and (i <= 6) then
-            sum_left_sensors = sum_left_sensors + robot.proximity[i].value
-        else
-            sum_right_sensors = sum_right_sensors + robot.proximity[i].value
-        end
+    for i=1, 6 do
+        sum_left_sensors = sum_left_sensors + robot.proximity[i].value
+        sum_right_sensors = sum_right_sensors + robot.proximity[25 - i].value
     end
 
     if sum_left_sensors > PROX_THRESHOLD or sum_right_sensors > PROX_THRESHOLD then
         local speed_diff = (sum_left_sensors - sum_right_sensors) * 5
-        local v_left = MAX_VELOCITY + speed_diff
-        local v_right = MAX_VELOCITY - speed_diff
+        local v_left = ClampVelocity(MAX_VELOCITY + speed_diff)
+        local v_right = ClampVelocity(MAX_VELOCITY - speed_diff)
         robot.wheels.set_velocity(v_left, v_right)
+    elseif Bernoulli(RANDOM_TURN_PROBABILITY) then
+        local turn = (robot.random.uniform() * 2 - 1) * MAX_VELOCITY
+        robot.wheels.set_velocity(ClampVelocity(MAX_VELOCITY - turn),
+                                  ClampVelocity(MAX_VELOCITY + turn))
     else
         robot.wheels.set_velocity(MAX_VELOCITY, MAX_VELOCITY)
     end
