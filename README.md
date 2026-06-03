@@ -24,7 +24,7 @@
 - Interprete Lua per eventuale validazione (`luac` usato per il check di sintassi).
 
 **Eseguire la simulazione**
-1. Posizionati nella cartella del progetto:
+1. Posizionarsi nella cartella del progetto:
 
 ```bash
 cd "/.../.../.../Lab activity 6-20260508"
@@ -36,10 +36,10 @@ cd "/.../.../.../Lab activity 6-20260508"
 argos3 -c test-aggregation.argos
 ```
 
-Nota: il comando `argos3` può variare a seconda dell'installazione (es. `argos3 -c` o `argos3 -c <file>` è lo standard per ARGoS 3).
+Nota: il comando `argos3` può variare a seconda dell'installazione (es. `argos3 -c` o `argos3 -c <file>` è lo standard per ARGoS 3),nel mio caso sto usando argos3.
 
 **Controlli rapidi e validazione**
-- Verificare sintassi Lua (non esegue nulla, solo check):
+- Verificare sintassi Lua per verificare errori vari di sintassi:
 
 ```bash
 luac -p aggregation.lua
@@ -51,7 +51,7 @@ luac -p aggregation.lua
 - `S`, `W`: probabilità base di stop/start. Aumentandole aumenti la probabilità indipendente dai vicini.
 - `PS_MAX`, `PW_MIN`: limiti per evitare probabilità fuori scala.
 - `ALPHA`, `BETA`: guadagni che modulano Ps/Pw in funzione del numero di vicini fermi `N`. Aumentando `ALPHA` la probabilità di fermarsi cresce più rapidamente con `N` (clusterizzazione più forte). Aumentando `BETA` la probabilità di ripartire decresce più rapidamente con `N` (stabilità dei cluster).
-- `MAXRANGE`: raggio di considerazione per `CountRAB()` (unità: metri nel codice attuale). Se pensi siano cm, ricordati di convertire (es. 30 cm = 0.30 m).
+- `MAXRANGE`: raggio di considerazione per `CountRAB()`
 - `MAX_VELOCITY`, `PROX_THRESHOLD`: influenzano il comportamento di movimento e l'evitamento ostacoli.
 
 
